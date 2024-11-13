@@ -84,7 +84,7 @@ def yield_acoustic_blocks(seconds_desired, yield_acoustic_packets_function, yiel
 
 fft_tuple = namedtuple('fft_tuple', ('bins', 'f0', 'df', 'dt'))
 
-def overlapped_fft_frame_generator(df_desired, f_high_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
+def overlapped_fft_frame_generator(df_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
     # start an upstream generator provided by the child
     child = yield_acoustic_blocks(0.5 / df_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments)
 
@@ -100,14 +100,6 @@ def overlapped_fft_frame_generator(df_desired, f_high_desired, yield_acoustic_pa
     F = T if np.complex64 == acoustic_block.samples.dtype else Th + 1
     df = fs / (2 * Th)
     dt = Th / fs
-
-    if np.complex64 == acoustic_block.samples.dtype:
-        if F * fs / (4 * Th) > f_high_desired:
-            F = int(f_high_desired * 4 * Th / fs)
-    else:
-        if F * fs / (2 * Th) > f_high_desired:
-            F = int(f_high_desired * 2 * Th / fs)
-            print('truncating band to lowest %g Hz' % (F * fs / (2 * Th)), file=sys.stderr)
 
     if np.complex64 == acoustic_block.samples.dtype:
         iw_start = (T // 2) - (F // 2)
@@ -143,9 +135,9 @@ def overlapped_fft_frame_generator(df_desired, f_high_desired, yield_acoustic_pa
                 out[ic, :] = rfft(np.concatenate((framehalf_last[ic, :], framehalf_this[ic, :])) * window)[0:F]
         yield fft_tuple(bins=out, f0=f0, df=df, dt=dt)
 
-def incoherent_fft_frame_generator(df_desired, dt_desired, f_high_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
+def incoherent_fft_frame_generator(df_desired, dt_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
     # start a generator function which yields complete fft frames until eof on stdin
-    child = overlapped_fft_frame_generator(df_desired, f_high_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments)
+    child = overlapped_fft_frame_generator(df_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments)
 
     # get first frame from generator
     frame = next(child, None)

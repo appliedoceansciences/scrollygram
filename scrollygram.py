@@ -112,7 +112,7 @@ def main():
     # start a child thread which accepts output yielded from one of several possible generators
     # depending on whether stdin is a tty, and safely communicate that generator output
     # and what to do with it back to the main thread via the work queue
-    pth = threading.Thread(target=child_thread, args=(main_thread_work, (df_desired, dt_desired, math.inf, yield_acoustic_packets, (yield_packet_bytes_function, input_source, phonemask))))
+    pth = threading.Thread(target=child_thread, args=(main_thread_work, (df_desired, dt_desired, yield_acoustic_packets, (yield_packet_bytes_function, input_source, phonemask))))
     pth.start()
 
     # event loop which dequeues work from other threads that must be done on main thread
