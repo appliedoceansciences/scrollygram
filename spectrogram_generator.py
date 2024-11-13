@@ -8,10 +8,12 @@ import math
 import numpy as np
 from collections import namedtuple
 
-# scipy has a proper single-precision rfft, use that if possible
-try: import scipy
-except: rfft = np.fft.rfft; print('using slower np.fft.rfft', file=sys.stderr)
-else: rfft = scipy.fft.rfft
+# if numpy version is 1.x, rfft is double precision only, try to use scipy instead
+rfft = np.fft.rfft
+if rfft(np.ones(8, dtype=np.single)).dtype != np.complex64:
+    try: import scipy
+    except: print('using slower np.fft.rfft', file=sys.stderr)
+    else: rfft = scipy.fft.rfft
 
 def cmagsquared(x):
     return np.square(np.real(x)) + np.square(np.imag(x))
