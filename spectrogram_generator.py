@@ -41,8 +41,8 @@ def round_to_nearest_five_smooth(x):
 
 acoustic_block_tuple = namedtuple('acoustic_block_tuple', ('samples', 'timestamp', 'sample_rate'))
 
-def yield_acoustic_blocks(seconds_desired, yield_samples_function, yield_samples_arguments):
-    child = yield_samples_function(*yield_samples_arguments)
+def yield_acoustic_blocks(seconds_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
+    child = yield_acoustic_packets_function(*yield_acoustic_packets_arguments)
 
     it_frame = 0
     it_packet = 0
@@ -84,9 +84,9 @@ def yield_acoustic_blocks(seconds_desired, yield_samples_function, yield_samples
 
 fft_tuple = namedtuple('fft_tuple', ('bins', 'f0', 'df', 'dt'))
 
-def overlapped_fft_frame_generator(df_desired, f_high_desired, yield_samples_function, yield_samples_arguments):
+def overlapped_fft_frame_generator(df_desired, f_high_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
     # start an upstream generator provided by the child
-    child = yield_acoustic_blocks(0.5 / df_desired, yield_samples_function, yield_samples_arguments)
+    child = yield_acoustic_blocks(0.5 / df_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments)
 
     acoustic_block = next(child, None)
     if acoustic_block is None: return
@@ -143,9 +143,9 @@ def overlapped_fft_frame_generator(df_desired, f_high_desired, yield_samples_fun
                 out[ic, :] = rfft(np.concatenate((framehalf_last[ic, :], framehalf_this[ic, :])) * window)[0:F]
         yield fft_tuple(bins=out, f0=f0, df=df, dt=dt)
 
-def incoherent_fft_frame_generator(df_desired, dt_desired, f_high_desired, yield_samples_function, yield_samples_arguments):
+def incoherent_fft_frame_generator(df_desired, dt_desired, f_high_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
     # start a generator function which yields complete fft frames until eof on stdin
-    child = overlapped_fft_frame_generator(df_desired, f_high_desired, yield_samples_function, yield_samples_arguments)
+    child = overlapped_fft_frame_generator(df_desired, f_high_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments)
 
     # get first frame from generator
     frame = next(child, None)
