@@ -95,11 +95,11 @@ def overlapped_fft_frame_generator(df_desired, f_high_desired, yield_samples_fun
     T = 2 * Th
     print('fft length %u samples' % T, file=sys.stderr)
 
-    F = T if np.singlecomplex == acoustic_block.samples.dtype else Th + 1
+    F = T if np.complex64 == acoustic_block.samples.dtype else Th + 1
     df = fs / (2 * Th)
     dt = Th / fs
 
-    if np.singlecomplex == acoustic_block.samples.dtype:
+    if np.complex64 == acoustic_block.samples.dtype:
         if F * fs / (4 * Th) > f_high_desired:
             F = int(f_high_desired * 4 * Th / fs)
     else:
@@ -107,17 +107,17 @@ def overlapped_fft_frame_generator(df_desired, f_high_desired, yield_samples_fun
             F = int(f_high_desired * 2 * Th / fs)
             print('truncating band to lowest %g Hz' % (F * fs / (2 * Th)), file=sys.stderr)
 
-    if np.singlecomplex == acoustic_block.samples.dtype:
+    if np.complex64 == acoustic_block.samples.dtype:
         iw_start = (T // 2) - (F // 2)
         iw_stop = iw_start + F
-    f0 = -0.5 * F * df if np.singlecomplex == acoustic_block.samples.dtype else 0
+    f0 = -0.5 * F * df if np.complex64 == acoustic_block.samples.dtype else 0
 
     # apply normalization as additional scalar multipliers here
     window = (np.hanning(2 * Th + 1) * 2)[0:(2 * Th)].astype(np.single) / T
-    if np.singlecomplex != acoustic_block.samples.dtype: window *= math.sqrt(2)
+    if np.complex64 != acoustic_block.samples.dtype: window *= math.sqrt(2)
 
     # if doing a c2c fft, modify the window such that it affects an fftshift for free
-    if np.singlecomplex == acoustic_block.samples.dtype: window[1:-1:2] *= -1
+    if np.complex64 == acoustic_block.samples.dtype: window[1:-1:2] *= -1
 
     # explicit transpose is worth doing because we only have to do it once per framehalf,
     # as opposed to accessing the values in a suboptimal pattern twice per framehalf
@@ -133,9 +133,9 @@ def overlapped_fft_frame_generator(df_desired, f_high_desired, yield_samples_fun
         framehalf_this = np.transpose(acoustic_block.samples)
 
         # do the fft, keep only the first F bins
-        out = np.ndarray(dtype=np.singlecomplex, shape=[C, F])
+        out = np.ndarray(dtype=np.complex64, shape=[C, F])
         for ic in range(C):
-            if np.singlecomplex == acoustic_block.samples.dtype:
+            if np.complex64 == acoustic_block.samples.dtype:
                 out[ic, :] = np.fft.fft(np.concatenate((framehalf_last[ic, :], framehalf_this[ic, :])) * window)[iw_start:iw_stop]
             else:
                 out[ic, :] = rfft(np.concatenate((framehalf_last[ic, :], framehalf_this[ic, :])) * window)[0:F]
