@@ -50,6 +50,7 @@ while True:
     sys.stdout.buffer.write(packet_header_bytes)
 
     sys.stdout.buffer.write(bytes)
+    sys.stdout.buffer.write(b'\0\0\0\0\0\0\0\0'[0:(packet_size_with_padding - packet_size)])
     sys.stdout.buffer.flush()
 
     seqnum = (seqnum + 1) % 65536
