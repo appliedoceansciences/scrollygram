@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import time
 import numpy as np
 
 fs = 8000
@@ -35,8 +36,16 @@ if duration > 0 and blocks_to_yield == 0: blocks_to_yield = 1
 advance = np.exp(1j * 2.0 * np.pi * tone_frequency / fs)
 carrier = 1.0
 
+t0 = time.monotonic()
+time_per_block = T_per_block / fs
+
 iblock = 0
 while iblock < blocks_to_yield or not blocks_to_yield:
+    if throttle:
+        now = time.monotonic()
+        if now < iblock * time_per_block / throttle + t0:
+            time.sleep((iblock * time_per_block / throttle + t0) - now)
+
     carriers = np.empty((T_per_block,), dtype=np.complex64)
     carriers[:] = advance
     carriers[0] *= carrier
@@ -44,9 +53,6 @@ while iblock < blocks_to_yield or not blocks_to_yield:
 
     carrier = carriers[-1]
     carrier /= np.abs(carrier)
-
-    if 0 == iblock:
-        print(np.angle(carriers[0]), file=sys.stderr)
 
     samples = tone_amplitude * carriers.real
 
@@ -63,5 +69,6 @@ while iblock < blocks_to_yield or not blocks_to_yield:
         samples = np.round(samples * 2147483647.0)
 
     sys.stdout.buffer.write(samples.astype(dtype))
+    sys.stdout.buffer.flush()
 
     iblock += 1
