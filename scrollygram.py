@@ -30,7 +30,8 @@ matplotlib.rcParams['toolbar'] = 'None'
 # if text gets piled on top of other text, try messing with this logic. the same settings do
 # not seem to give satisfactory results on all combinations of OS and screen dpi. if someone
 # knows what to do here that does the right thing unconditionally lmk
-# if matplotlib.get_backend() != 'MacOSX': matplotlib.rcParams['figure.dpi'] = 300
+if matplotlib.get_backend() == 'TkAgg' and sys.platform == 'linux':
+    matplotlib.rcParams['figure.dpi'] = 200
 
 import matplotlib.pyplot as plt
 
