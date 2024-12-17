@@ -51,6 +51,50 @@ def yield_packet_bytes_from_udp(source):
     while True:
         yield source.recvfrom(1500)[0]
 
+def _make_image_override(self, A, in_bbox, out_bbox, clip_bbox, magnification=1.0,
+                unsampled=False, round_to_pixel_border=True):
+    # this is a cut-down version of matplotlib.image.AxesImage._make_image() that omits an
+    # entirely redundant copy and resample of the alpha channel which is responsible for
+    # almost all of the program's cpu usage otherwise
+    if unsampled or self.origin == 'upper' or A.ndim != 3 or A.shape[2] != 4 or self._interpolation_stage == 'rgba':
+        raise RuntimeError('custom method assumptions violated')
+
+    clipped_bbox = matplotlib.image.Bbox.intersection(out_bbox, clip_bbox)
+
+    if clipped_bbox is None:
+        return None, 0, 0, None
+
+    out_width_base = clipped_bbox.width * magnification
+    out_height_base = clipped_bbox.height * magnification
+
+    if out_width_base == 0 or out_height_base == 0:
+        return None, 0, 0, None
+
+    t = (matplotlib.image.Affine2D()
+         .scale(in_bbox.width / A.shape[1], in_bbox.height / A.shape[0])
+         .translate(in_bbox.x0, in_bbox.y0)
+         + self.get_transform()
+         + (matplotlib.image.Affine2D()
+            .translate(-clipped_bbox.x0, -clipped_bbox.y0)
+            .scale(magnification)))
+
+    # todo: figure out which subset of these code paths we actually need
+    if ((not unsampled) and t.is_affine and round_to_pixel_border and
+            (out_width_base % 1.0 != 0.0 or out_height_base % 1.0 != 0.0)):
+        out_width = math.ceil(out_width_base)
+        out_height = math.ceil(out_height_base)
+        extra_width = (out_width - out_width_base) / out_width_base
+        extra_height = (out_height - out_height_base) / out_height_base
+        t += matplotlib.image.Affine2D().scale(1.0 + extra_width, 1.0 + extra_height)
+    else:
+        out_width = int(out_width_base)
+        out_height = int(out_height_base)
+    out_shape = (out_height, out_width)
+
+    output = matplotlib.image._resample(self, A, out_shape, t, alpha=self._get_scalar_alpha())
+
+    return output, clipped_bbox.x0, clipped_bbox.y0, t
+
 def main():
     # constants you might want to fiddle with. TODO: allow main() to modify these
     clim=(-120, 0)
@@ -156,6 +200,10 @@ def main():
                     extent=[xextent[0], xextent[1], yextent[0], yextent[1]],
                     aspect=(((xextent[1] - xextent[0]) * Y) / ((yextent[1] - yextent[0]) * X)), animated=True)
                 ims.append(im)
+
+                # override an expensive method inside matplotlib that tries to do too much
+                im._make_image = _make_image_override.__get__(im, matplotlib.image.AxesImage)
+
                 ax.set(title='channel ' + str(ichannel))
 
                 # label the y axis for the subplots on the left side
