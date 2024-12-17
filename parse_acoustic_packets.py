@@ -14,6 +14,8 @@ import numpy as np
 from datetime import datetime
 from collections import namedtuple
 
+packet_tuple = namedtuple('packet_tuple', ('samples', 'timestamp', 'fs', 'seqnum'))
+
 # this function can also be imported and used on its own to parse a packet received via udp
 def parse_acoustic_packet(packet_bytes):
     # if packet size is too small to be an acoustic packet, skip it
@@ -43,7 +45,7 @@ def parse_acoustic_packet(packet_bytes):
 
     # reassemble timestamp in unix seconds
     timestamp_unix_seconds = ((timestamp_msbs << 16) | timestamp_lsbs) * 16.0 / 1e6
-    return samples, timestamp_unix_seconds, sample_rate, seqnum
+    return packet_tuple(samples=samples, timestamp=timestamp_unix_seconds, fs=sample_rate, seqnum=seqnum)
 
 # this generator function can be specified as one of the possible upstream sources of
 # blocks of bytes used as input to the below generator, and handles all of the details of
@@ -75,45 +77,44 @@ def datestr_from_unix_time(time_in_unix_seconds):
     remainder = microseconds % 1000000
     return '%s.%06uZ' % (datetime.utcfromtimestamp(integer_portion).strftime('%Y%m%dT%H%M%S'), remainder)
 
-packet_tuple = namedtuple('packet_tuple', ['samples', 'timestamp', 'fs'])
-
 # this generator function can be imported and used by calling code to ingest from log files or udp
 def yield_acoustic_packets(yield_packet_bytes_function, source, phonemask):
     seqnum_prev = None
     initial_timestamp = None
     timestamp_prev = None
     samples_yielded = 0
+    sample_rate = 0
 
     for packet_bytes in yield_packet_bytes_function(source):
         # attempt to parse the packet bytes as an acoustic packet
         packet = parse_acoustic_packet(packet_bytes)
         if not packet: continue
-        samples, timestamp_unix_seconds, sample_rate, seqnum = packet
 
         # emit some diagnostic text on the first packet
         if seqnum_prev is None:
+            sample_rate = packet.fs
             print('%u channels, %g sps, %u samples per channel per packet' %
-                  (samples.shape[1], sample_rate, samples.shape[0]), file=sys.stderr)
-            initial_timestamp = timestamp_unix_seconds - samples.shape[0] / sample_rate
+                  (packet.samples.shape[1], sample_rate, packet.samples.shape[0]), file=sys.stderr)
+            initial_timestamp = packet.timestamp - packet.samples.shape[0] / sample_rate
             print('first packet timestamp %s, implied start time %s ' %
-                (datestr_from_unix_time(timestamp_unix_seconds),
+                (datestr_from_unix_time(packet.timestamp),
                 datestr_from_unix_time(initial_timestamp)), file=sys.stderr)
         else:
-            packets_missing = (seqnum - seqnum_prev - 1) % 65536
+            packets_missing = (packet.seqnum - seqnum_prev - 1) % 65536
             if packets_missing != 0:
-                print('warning: expected seqnum %u, got %u, missing %u packets (%g s)' % ((seqnum_prev + 1) % 65536, seqnum, packets_missing, packets_missing * samples.shape[0] / sample_rate), file=sys.stderr)
-        seqnum_prev = seqnum
-        timestamp_prev = timestamp_unix_seconds
-        samples_yielded += samples.shape[0]
+                print('warning: expected seqnum %u, got %u, missing %u packets (%g s)' % ((seqnum_prev + 1) % 65536, packet.seqnum, packets_missing, packets_missing * packet.samples.shape[0] / sample_rate), file=sys.stderr)
+        seqnum_prev = packet.seqnum
+        timestamp_prev = packet.timestamp
+        samples_yielded += packet.samples.shape[0]
 
+        if phonemask is not None:
+            packet = packet_tuple(samples=np.take(packet.samples, phonemask, axis=1), timestamp=packet.timestamp, fs=packet.fs, seqnum=packet.seqnum)
 
-        if phonemask is not None: samples = np.take(samples, phonemask, axis=1)
-
-        yield packet_tuple(samples=samples, timestamp=timestamp_unix_seconds, fs=sample_rate)
+        yield packet
 
     print('incoming data has ended', file=sys.stderr)
     if timestamp_prev is not None:
-        print('final packet ends at %s' % (datestr_from_unix_time(timestamp_unix_seconds)), file=sys.stderr)
+        print('final packet ends at %s' % (datestr_from_unix_time(timestamp_prev)), file=sys.stderr)
         print('yielded %g seconds according to expected sample rate, %g seconds according to packet timestamps' %
               ( samples_yielded / sample_rate, timestamp_prev - initial_timestamp), file=sys.stderr)
 
