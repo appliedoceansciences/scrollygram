@@ -151,6 +151,7 @@ def main():
                 yextent = [0, dt * Y]
 
                 im = ax.imshow(plotdata[ichannel, 0:Y, :, :],
+                    interpolation='nearest',
                     origin='lower',
                     extent=[xextent[0], xextent[1], yextent[0], yextent[1]],
                     aspect=(((xextent[1] - xextent[0]) * Y) / ((yextent[1] - yextent[0]) * X)), animated=True)
