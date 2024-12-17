@@ -14,7 +14,7 @@ import numpy as np
 from datetime import datetime
 from collections import namedtuple
 
-packet_tuple = namedtuple('packet_tuple', ('samples', 'timestamp', 'fs', 'seqnum'))
+packet_tuple = namedtuple('packet_tuple', ('samples', 'timestamp', 'fs', 'seqnum', 'fullscale'))
 
 # this function can also be imported and used on its own to parse a packet received via udp
 def parse_acoustic_packet(packet_bytes):
@@ -43,9 +43,11 @@ def parse_acoustic_packet(packet_bytes):
     # interpret the data segment as a numpy array with the given shape and dtype
     samples = np.ndarray((samples_per_channel_per_packet, channels), buffer=packet_bytes[16:], dtype=dtype)
 
+    fullscale = 32767.0 if (flags & 0x3 == 0) else 2147483647.0 if (flags & 0x3 == 1) else 1.0 if (flags & 0x3) else 8388607.0
+
     # reassemble timestamp in unix seconds
     timestamp_unix_seconds = ((timestamp_msbs << 16) | timestamp_lsbs) * 16.0 / 1e6
-    return packet_tuple(samples=samples, timestamp=timestamp_unix_seconds, fs=sample_rate, seqnum=seqnum)
+    return packet_tuple(samples=samples, timestamp=timestamp_unix_seconds, fs=sample_rate, seqnum=seqnum, fullscale=fullscale)
 
 # this generator function can be specified as one of the possible upstream sources of
 # blocks of bytes used as input to the below generator, and handles all of the details of
@@ -108,7 +110,7 @@ def yield_acoustic_packets(yield_packet_bytes_function, source, phonemask):
         samples_yielded += packet.samples.shape[0]
 
         if phonemask is not None:
-            packet = packet_tuple(samples=np.take(packet.samples, phonemask, axis=1), timestamp=packet.timestamp, fs=packet.fs, seqnum=packet.seqnum)
+            packet = packet_tuple(samples=np.take(packet.samples, phonemask, axis=1), timestamp=packet.timestamp, fs=packet.fs, seqnum=packet.seqnum, fullscale=packet.fullscale)
 
         yield packet
 

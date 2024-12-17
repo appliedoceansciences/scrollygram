@@ -53,7 +53,7 @@ def yield_packet_bytes_from_udp(source):
 
 def main():
     # constants you might want to fiddle with. TODO: allow main() to modify these
-    clim=(-30, 60)
+    clim=(-120, 0)
     phonemask = None
     #phonemask = (0, 1, 2, 3, 6, 7, 8, 9, 12, 13, 14, 15)
     df_desired = 20.3451

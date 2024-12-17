@@ -39,7 +39,7 @@ def round_to_nearest_five_smooth(x):
     # choose whichever is logarithmically closer to x
     return y_above if y_above * y_below <= x * x else y_below
 
-acoustic_block_tuple = namedtuple('acoustic_block_tuple', ('samples', 'timestamp', 'sample_rate'))
+acoustic_block_tuple = namedtuple('acoustic_block_tuple', ('samples', 'timestamp', 'sample_rate', 'fullscale'))
 
 def yield_acoustic_blocks(seconds_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
     child = yield_acoustic_packets_function(*yield_acoustic_packets_arguments)
@@ -74,7 +74,7 @@ def yield_acoustic_blocks(seconds_desired, yield_acoustic_packets_function, yiel
         it_packet = it_packet + T_copy
 
         if it_frame == T_per_frame:
-            yield acoustic_block_tuple(samples=out, timestamp=packet.timestamp, sample_rate=sample_rate)
+            yield acoustic_block_tuple(samples=out, timestamp=packet.timestamp, sample_rate=sample_rate, fullscale=packet.fullscale)
             it_frame = 0
             out = None
 
@@ -107,7 +107,7 @@ def overlapped_fft_frame_generator(df_desired, yield_acoustic_packets_function, 
     f0 = -0.5 * F * df if np.complex64 == acoustic_block.samples.dtype else 0
 
     # apply normalization as additional scalar multipliers here
-    window = (np.hanning(2 * Th + 1) * 2)[0:(2 * Th)].astype(np.single) / T
+    window = (np.hanning(2 * Th + 1) * 2)[0:(2 * Th)].astype(np.single) / (T * acoustic_block.fullscale)
     if np.complex64 != acoustic_block.samples.dtype: window *= math.sqrt(2)
 
     # if doing a c2c fft, modify the window such that it affects an fftshift for free
