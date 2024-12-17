@@ -71,7 +71,7 @@ def main():
     Y = 0
     fig = None
     axes = []
-    ims = None
+    ims = []
     iy = 0
 
     if len(sys.argv) > 1:
@@ -142,7 +142,6 @@ def main():
             nrows = 1 if C <= 2 else 2 if C <= 8 else 3 if C <= 12 else 4
             ncols = round_up_to_next_multiple_of(C, nrows) // nrows
 
-            ims = [None for i in range(C)]
             for ichannel in range(0, C):
                 axes.append(fig.add_subplot(nrows, ncols, ichannel + 1))
                 ax = axes[ichannel]
@@ -151,10 +150,11 @@ def main():
                 xextent = [f0 / 1e3, ff / 1e3]
                 yextent = [0, dt * Y]
 
-                ims[ichannel] = ax.imshow(plotdata[ichannel, 0:Y, :, :],
+                im = ax.imshow(plotdata[ichannel, 0:Y, :, :],
                     origin='lower',
                     extent=[xextent[0], xextent[1], yextent[0], yextent[1]],
                     aspect=(((xextent[1] - xextent[0]) * Y) / ((yextent[1] - yextent[0]) * X)), animated=True)
+                ims.append(im)
                 ax.set(title='channel ' + str(ichannel))
 
                 # label the y axis for the subplots on the left side
