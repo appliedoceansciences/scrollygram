@@ -22,6 +22,8 @@ def generate_blocks_of_dithered_tone(T_per_block, C, tone_frequency, tone_amplit
         # if more than one channel, repeat each sample of the scaled carrier C times
         if C > 1:
             samples = np.tile(samples[:, None], (1, C))
+        else:
+            samples.shape = (T_per_block, 1)
 
         # add dither which is unique to each channel
         samples += tpdf_amplitude * np.random.triangular(-1,0,1, size=(T_per_block, C))
