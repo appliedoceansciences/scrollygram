@@ -96,6 +96,14 @@ def _make_image_override(self, A, in_bbox, out_bbox, clip_bbox, magnification=1.
 
     return output, clipped_bbox.x0, clipped_bbox.y0, t
 
+from generate_packets import generate_packets_with_dithered_tone
+
+def test_input(src):
+    child = generate_packets_with_dithered_tone(10.0, 1.0, 1725898437.0, 2, 440.0, 32766.0 / 32767.0, 1.0 / 32767.0, 31250.0, np.int16)
+
+    for logging_header_bytes, packet_bytes, padding in child:
+        yield packet_bytes
+
 def main():
     # constants you might want to fiddle with. TODO: allow main() to modify these
     clim=(-120, 0)
@@ -120,7 +128,10 @@ def main():
     iy = 0
 
     if len(sys.argv) > 1:
-        if 'shm:' in sys.argv[1]:
+        if 'test' in sys.argv[1]:
+            input_source = None
+            yield_packet_bytes_function = test_input
+        elif 'shm:' in sys.argv[1]:
             try:
                 from shared_memory_ringbuffer_reader import shared_memory_ringbuffer_generator
             except:
