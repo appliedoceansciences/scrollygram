@@ -47,10 +47,10 @@ while True:
     packet_header_bytes = struct.pack('<BBHfHHI',
         0x45, C, seqnum, sample_rate, flags, timestamp_lsbs, timestamp_msbs)
 
-    sys.stdout.buffer.write(packet_header_bytes)
+    # to ensure that subsequent packets are 8-byte-aligned with the stream as expected
+    padding = b'\0\0\0\0\0\0\0\0'[0:(packet_size_with_padding - packet_size)]
 
-    sys.stdout.buffer.write(bytes)
-    sys.stdout.buffer.write(b'\0\0\0\0\0\0\0\0'[0:(packet_size_with_padding - packet_size)])
+    sys.stdout.buffer.write(packet_header_bytes + bytes + padding)
     sys.stdout.buffer.flush()
 
     seqnum = (seqnum + 1) % 65536
