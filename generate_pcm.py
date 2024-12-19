@@ -4,6 +4,35 @@ import sys
 import time
 import numpy as np
 
+def generate_blocks_of_dithered_tone(T_per_block, C, tone_frequency, tone_amplitude, tpdf_amplitude, fs, dtype):
+    advance = np.exp(1j * 2.0 * np.pi * tone_frequency / fs)
+    carrier = 1.0
+
+    while True:
+        carriers = np.empty((T_per_block,), dtype=np.complex64)
+        carriers[:] = advance
+        carriers[0] *= carrier
+        carriers = np.cumprod(carriers)
+
+        carrier = carriers[-1]
+        carrier /= np.abs(carrier)
+
+        samples = tone_amplitude * carriers.real
+
+        # if more than one channel, repeat each sample of the scaled carrier C times
+        if C > 1:
+            samples = np.tile(samples[:, None], (1, C))
+
+        # add dither which is unique to each channel
+        samples += tpdf_amplitude * np.random.triangular(-1,0,1, size=(T_per_block, C))
+
+        if np.int16 == dtype:
+            samples = np.round(samples * 32767.0)
+        elif np.int32 == dtype:
+            samples = np.round(samples * 2147483647.0)
+
+        yield samples.astype(dtype)
+
 fs = 8000
 C = 1
 dtype = np.single
@@ -33,11 +62,10 @@ T = int(round(duration * fs))
 blocks_to_yield = T // T_per_block
 if duration > 0 and blocks_to_yield == 0: blocks_to_yield = 1
 
-advance = np.exp(1j * 2.0 * np.pi * tone_frequency / fs)
-carrier = 1.0
-
 t0 = time.monotonic()
 time_per_block = T_per_block / fs
+
+child = generate_blocks_of_dithered_tone(T_per_block, C, tone_frequency, tone_amplitude, tpdf_amplitude, fs, dtype)
 
 iblock = 0
 while iblock < blocks_to_yield or not blocks_to_yield:
@@ -46,27 +74,7 @@ while iblock < blocks_to_yield or not blocks_to_yield:
         if now < iblock * time_per_block / throttle + t0:
             time.sleep((iblock * time_per_block / throttle + t0) - now)
 
-    carriers = np.empty((T_per_block,), dtype=np.complex64)
-    carriers[:] = advance
-    carriers[0] *= carrier
-    carriers = np.cumprod(carriers)
-
-    carrier = carriers[-1]
-    carrier /= np.abs(carrier)
-
-    samples = tone_amplitude * carriers.real
-
-    # if more than one channel, repeat each sample of the scaled carrier C times
-    if C > 1:
-        samples = np.tile(samples[:, None], (1, C))
-
-    # add dither which is unique to each channel
-    samples += tpdf_amplitude * np.random.triangular(-1,0,1, size=(T_per_block, C))
-
-    if np.int16 == dtype:
-        samples = np.round(samples * 32767.0)
-    elif np.int32 == dtype:
-        samples = np.round(samples * 2147483647.0)
+    samples = next(child)
 
     sys.stdout.buffer.write(samples.astype(dtype))
     sys.stdout.buffer.flush()
