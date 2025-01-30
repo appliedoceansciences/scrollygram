@@ -10,13 +10,17 @@ def generate_blocks_of_dithered_tone(T_per_block, C, tone_frequency, tone_amplit
 
     while True:
         carriers = np.empty((T_per_block,), dtype=np.complex64)
+
+        # create a complex sinusoid starting one advance past the prior carrier value
         carriers[:] = advance
         carriers[0] *= carrier
         carriers = np.cumprod(carriers)
 
+        # save and normalize final carrier value so we can use it as the next initial value
         carrier = carriers[-1]
         carrier /= np.abs(carrier)
 
+        # keep the real component and scale it by the desired amplitude
         samples = tone_amplitude * carriers.real
 
         # if more than one channel, repeat each sample of the scaled carrier C times
