@@ -4,10 +4,11 @@ import threading
 import queue
 import socket
 import numpy as np
+from collections import namedtuple
 
 # This provides the generator function which knows how to extract sensor-agnostic frames of
 # acoustic sample data from whatever possibly sensor-specific format they are coming from
-from parse_acoustic_packets import yield_acoustic_packets, yield_packet_bytes_from_log_stream, packet_tuple
+from parse_acoustic_packets import yield_acoustic_packets, yield_packet_bytes_from_log_stream
 
 import matplotlib
 #matplotlib.rcParams['toolbar'] = 'None'
@@ -40,7 +41,8 @@ def packet_concatenator(nominal_length, yield_packet_bytes_function, source):
                 it_trim = np.argmax(np.diff(out_prior[:, ic_trigger]))
                 subset = full[it_trim:(it_trim + T_to_yield), :]
 
-                yield packet_tuple(samples=subset, timestamp=packet.timestamp, fs=packet.fs)
+                concatted_tuple = namedtuple('concatted_tuple', ('samples', 'timestamp', 'fs', 'fullscale'))
+                yield concatted_tuple(samples=subset, timestamp=packet.timestamp, fs=packet.fs, fullscale=packet.fullscale)
 
             out_prior = out
             out = None
@@ -133,7 +135,7 @@ def main():
 
             lines = ax.plot(xdata, packet.samples)
 
-            ax.set_ylim(ymin=-32768, ymax=32767)
+            ax.set_ylim(ymin=-packet.fullscale, ymax=packet.fullscale)
             ax.set(title='data')
 
             # label the y axis for the subplots on the left side

@@ -4,10 +4,6 @@
 # to convert previously logged packetized element data to raw pcm, such that ffmpeg or other
 # software can be used to convert it to wav files or for other purposes
 
-# gunzip -c ~/Downloads/20240312T1805*.bin.gz | ./parse_acoustic_packets.py phonemask 0,1,2,3 | ffmpeg -y -f s32le -ac 4 -ar 8000 -i - -acodec pcm_s16le /tmp/tmp.wav
-# note that the number of phones in the phonemask must be the same as the value of the "-ac"
-# parameter in ffmpeg arguments, if ffmpeg is the consumer of this audio
-
 import struct
 import sys
 import numpy as np
