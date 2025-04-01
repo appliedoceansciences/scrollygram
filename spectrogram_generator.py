@@ -84,7 +84,7 @@ def yield_acoustic_blocks(seconds_desired, yield_acoustic_packets_function, yiel
 
 fft_tuple = namedtuple('fft_tuple', ('bins', 'f0', 'df', 'dt'))
 
-def overlapped_fft_frame_generator(df_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
+def overlapped_fft_frame_generator(df_desired, f0_desired, fh_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
     # start an upstream generator provided by the child
     child = yield_acoustic_blocks(0.5 / df_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments)
 
@@ -97,14 +97,17 @@ def overlapped_fft_frame_generator(df_desired, yield_acoustic_packets_function, 
     T = 2 * Th
     print('fft length %u samples' % T, file=sys.stderr)
 
-    F = T if np.complex64 == acoustic_block.samples.dtype else Th + 1
     df = fs / (2 * Th)
     dt = Th / fs
 
-    if np.complex64 == acoustic_block.samples.dtype:
-        iw_start = (T // 2) - (F // 2)
-        iw_stop = iw_start + F
-    f0 = -0.5 * F * df if np.complex64 == acoustic_block.samples.dtype else 0
+    iw_start = round(f0_desired / df)
+    f0 = iw_start * df
+
+    if fh_desired is not None:
+        iw_stop = round(fh_desired / df)
+    else:
+        iw_stop = Th + 1
+    F = iw_stop - iw_start
 
     # apply normalization as additional scalar multipliers here
     window = (np.hanning(2 * Th + 1) * 2)[0:(2 * Th)].astype(np.single) / (T * acoustic_block.fullscale)
@@ -129,15 +132,12 @@ def overlapped_fft_frame_generator(df_desired, yield_acoustic_packets_function, 
         # do the fft, keep only the first F bins
         out = np.ndarray(dtype=np.complex64, shape=[C, F])
         for ic in range(C):
-            if np.complex64 == acoustic_block.samples.dtype:
-                out[ic, :] = np.fft.fft(np.concatenate((framehalf_last[ic, :], framehalf_this[ic, :])) * window)[iw_start:iw_stop]
-            else:
-                out[ic, :] = rfft(np.concatenate((framehalf_last[ic, :], framehalf_this[ic, :])) * window)[0:F]
+            out[ic, :] = rfft(np.concatenate((framehalf_last[ic, :], framehalf_this[ic, :])) * window)[iw_start:iw_stop]
         yield fft_tuple(bins=out, f0=f0, df=df, dt=dt)
 
-def incoherent_fft_frame_generator(df_desired, dt_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
+def incoherent_fft_frame_generator(df_desired, dt_desired, f0_desired, fh_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
     # start a generator function which yields complete fft frames until eof on stdin
-    child = overlapped_fft_frame_generator(df_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments)
+    child = overlapped_fft_frame_generator(df_desired, f0_desired, fh_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments)
 
     # get first frame from generator
     frame = next(child, None)
