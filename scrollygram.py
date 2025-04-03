@@ -110,6 +110,8 @@ def main():
     phonemask = None
     #phonemask = (0, 1, 2, 3, 6, 7, 8, 9, 12, 13, 14, 15)
     df_desired = 20.3451
+    f0_desired = 0.0
+    fh_desired = None
     dt_desired = 0.0
 
     # thread-safe fifo between rx thread and main thread
