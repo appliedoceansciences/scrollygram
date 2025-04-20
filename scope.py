@@ -49,9 +49,15 @@ def packet_concatenator(nominal_length, yield_packet_bytes_function, source):
 
         packet = next(child, None)
 
+window_closed = False
+def on_close(event):
+    global window_closed
+    window_closed = True
+
 # turns a generator into a child thread which yields functions and arguments to main thread
 def child_thread(main_thread_work, nominal_length, yield_packet_bytes_function, source):
     for packet in packet_concatenator(nominal_length, yield_packet_bytes_function, source):
+        if window_closed: break
         main_thread_work.put(packet)
 
     # inform main thread that child generator has reached eof and no more input is coming
@@ -108,6 +114,8 @@ def main():
 
     # create an empty figure but don't show it yet
     fig = plt.figure()
+
+    fig.canvas.mpl_connect('close_event', on_close)
 
     # thread-safe fifo between rx thread and main thread
     main_thread_work = queue.Queue()

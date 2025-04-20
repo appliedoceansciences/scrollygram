@@ -40,9 +40,15 @@ to_rgba_func = matplotlib.cm.ScalarMappable(cmap=matplotlib.colormaps['turbo']).
 def round_up_to_next_multiple_of(a, q):
     return a + q - a % q if a % q else a
 
+window_closed = False
+def on_close(event):
+    global window_closed
+    window_closed = True
+
 # turns a generator into a child thread which yields functions and arguments to main thread
 def child_thread(main_thread_work, incoherent_fft_frame_generator_arguments):
     for packet in incoherent_fft_frame_generator(*incoherent_fft_frame_generator_arguments):
+        if window_closed: break
         main_thread_work.put(packet)
 
     # inform main thread that child generator has reached eof and no more input is coming
@@ -166,6 +172,8 @@ def main():
 
     # create an empty figure but don't show it yet
     fig = plt.figure()
+
+    fig.canvas.mpl_connect('close_event', on_close)
 
     # start a child thread which accepts output yielded from one of several possible generators
     # depending on whether stdin is a tty, and safely communicate that generator output
