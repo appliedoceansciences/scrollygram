@@ -121,5 +121,8 @@ if __name__ == '__main__':
 
         for payload in shared_memory_ringbuffer_generator(shm_name):
             sys.stdout.buffer.write(payload)
+            padding_size = (len(payload) + 7) & ~7 - len(payload)
+            if padding_size:
+                sys.stdout.buffer.write(b'\0' * padding_size)
             sys.stdout.flush()
     main()
