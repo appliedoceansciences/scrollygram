@@ -7,11 +7,12 @@ import numpy as np
 
 from generate_pcm import generate_blocks_of_dithered_tone
 
-def generate_packets_with_dithered_tone(duration, throttle, t, C, tone_frequency, tone_amplitude, tpdf_amplitude, fs, dtype):
+def generate_packets_with_dithered_tone(duration, throttle, t, C, tone_frequency, tone_amplitude, tpdf_amplitude, fs, dtype, T_per_block=None):
     itemsize = 2 if np.int16 == dtype else 4
 
     # number of samples per packet is maximum number s.t. packet size is not more than 1500 bytes
-    T_per_block = (1500 - 16) // (itemsize * C)
+    if T_per_block is None:
+        T_per_block = (1500 - 16) // (itemsize * C)
 
     print('T_per_block = %u' % T_per_block, file=sys.stderr)
 
@@ -76,10 +77,13 @@ if __name__ == '__main__':
 
     t = 1725898437.0
 
+    T_per_block = None
+
     # loop over pairs of arguments
     for key, value in zip(sys.argv[1::2], sys.argv[2::2]):
         if key == 'fs': fs = float(value)
         if key == 'C': C = int(value)
+        if key == 'T_per_block': T_per_block = int(value)
         if key == 'tone_frequency': tone_frequency = float(value)
         if key == 'tone_amplitude': tone_amplitude = float(value)
         if key == 'tpdf_amplitude': tone_amplitude = float(value)
@@ -88,7 +92,7 @@ if __name__ == '__main__':
         if key == 'dtype': dtype = np.dtype(value)
         if key == 't0': t = float(value)
 
-    child = generate_packets_with_dithered_tone(duration, throttle, t, C, tone_frequency, tone_amplitude, tpdf_amplitude, fs, dtype)
+    child = generate_packets_with_dithered_tone(duration, throttle, t, C, tone_frequency, tone_amplitude, tpdf_amplitude, fs, dtype, T_per_block=T_per_block)
 
     for logging_header_bytes, packet_bytes, padding in child:
         sys.stdout.buffer.write(logging_header_bytes + packet_bytes + padding)
