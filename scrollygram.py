@@ -110,31 +110,7 @@ def test_input(src):
     for logging_header_bytes, packet_bytes, padding in child:
         yield packet_bytes
 
-def main():
-    # constants you might want to fiddle with. TODO: allow main() to modify these
-    clim=(-120, 0)
-    phonemask = None
-    #phonemask = (0, 1, 2, 3, 6, 7, 8, 9, 12, 13, 14, 15)
-    df_desired = 20.3451
-    f0_desired = 0.0
-    fh_desired = None
-    dt_desired = 0.0
-
-    # thread-safe fifo between rx thread and main thread
-    main_thread_work = queue.Queue()
-
-    # global variables with deferred initialization
-    nrows = 0
-    ncols = 0
-    plotdata = None
-    C = 0
-    X = 0
-    Y = 0
-    fig = None
-    axes = []
-    ims = []
-    iy = 0
-
+def get_input_source():
     if len(sys.argv) > 1:
         if 'test' in sys.argv[1]:
             input_source = None
@@ -171,9 +147,37 @@ def main():
             print('for tcp input: %s host:port' % sys.argv[0], file=sys.stderr)
             print('for udp input: %s port' % sys.argv[0], file=sys.stderr)
             print('for stdin input: cat whatever*.bin | %s' % sys.argv[0], file=sys.stderr)
-            return
+            exit(1)
         input_source = sys.stdin.buffer
         yield_packet_bytes_function = yield_packet_bytes_from_log_stream
+    return input_source, yield_packet_bytes_function
+
+def main():
+    # constants you might want to fiddle with. TODO: allow main() to modify these
+    clim=(-120, 0)
+    phonemask = None
+    #phonemask = (0, 1, 2, 3, 6, 7, 8, 9, 12, 13, 14, 15)
+    df_desired = 20.3451
+    f0_desired = 0.0
+    fh_desired = None
+    dt_desired = 0.0
+
+    # thread-safe fifo between rx thread and main thread
+    main_thread_work = queue.Queue()
+
+    # global variables with deferred initialization
+    nrows = 0
+    ncols = 0
+    plotdata = None
+    C = 0
+    X = 0
+    Y = 0
+    fig = None
+    axes = []
+    ims = []
+    iy = 0
+
+    input_source, yield_packet_bytes_function = get_input_source()
 
     # create an empty figure but don't show it yet
     fig = plt.figure()
