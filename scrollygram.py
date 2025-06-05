@@ -155,15 +155,13 @@ def get_input_source():
 def main():
     # constants you might want to fiddle with. TODO: allow main() to modify these
     clim=(-120, 0)
+
+    # if not None, a tuple of phone indices to keep, starting at zero
     phonemask = None
-    #phonemask = (0, 1, 2, 3, 6, 7, 8, 9, 12, 13, 14, 15)
     df_desired = 20.3451
     f0_desired = 0.0
     fh_desired = None
     dt_desired = 0.0
-
-    # thread-safe fifo between rx thread and main thread
-    main_thread_work = queue.Queue()
 
     # global variables with deferred initialization
     nrows = 0
@@ -172,12 +170,14 @@ def main():
     C = 0
     X = 0
     Y = 0
-    fig = None
     axes = []
     ims = []
     iy = 0
 
     input_source, yield_packet_bytes_function = get_input_source()
+
+    # thread-safe fifo between rx thread and main thread
+    main_thread_work = queue.Queue()
 
     # create an empty figure but don't show it yet
     fig = plt.figure()
