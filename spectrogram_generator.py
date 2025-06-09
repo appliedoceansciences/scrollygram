@@ -54,6 +54,8 @@ def yield_acoustic_blocks(seconds_desired, yield_acoustic_packets_function, yiel
     C = packet.samples.shape[1]
     sample_rate = packet.fs
 
+    if seconds_desired is None: seconds_desired = 1024 / packet.fs
+
     # if two blocks are used as an r2c fft input, the length should be a 5-smooth multiple of 32
     T_per_frame = round_to_nearest_five_smooth(sample_rate * seconds_desired / 16.0) * 16
 
@@ -86,7 +88,8 @@ fft_tuple = namedtuple('fft_tuple', ('bins', 'f0', 'df', 'dt'))
 
 def overlapped_fft_frame_generator(df_desired, f0_desired, fh_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments):
     # start an upstream generator provided by the child
-    child = yield_acoustic_blocks(0.5 / df_desired, yield_acoustic_packets_function, yield_acoustic_packets_arguments)
+    child = yield_acoustic_blocks(None if df_desired is None else 0.5 / df_desired,
+        yield_acoustic_packets_function, yield_acoustic_packets_arguments)
 
     acoustic_block = next(child, None)
     if acoustic_block is None: return

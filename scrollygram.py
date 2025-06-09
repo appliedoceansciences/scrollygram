@@ -158,7 +158,7 @@ def main():
 
     # if not None, a tuple of phone indices to keep, starting at zero
     phonemask = None
-    df_desired = 20.3451
+    df_desired = None
     f0_desired = 0.0
     fh_desired = None
     dt_desired = 0.0
