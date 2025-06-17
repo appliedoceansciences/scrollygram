@@ -6,9 +6,9 @@
 
 import struct
 import sys
-import numpy as np
 from datetime import datetime
 from collections import namedtuple
+import numpy as np
 
 packet_tuple = namedtuple('packet_tuple', ('samples', 'timestamp', 'fs', 'seqnum', 'fullscale'))
 
