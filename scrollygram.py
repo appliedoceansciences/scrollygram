@@ -222,8 +222,8 @@ def main():
                 ax = axes[ichannel]
 
                 ff = f0 + X * df
-                xextent = [f0 / 1e3, ff / 1e3]
-                yextent = [0, dt * Y]
+                xextent = [(f0 - 0.5 * df) / 1e3, (ff - 0.5 * df) / 1e3]
+                yextent = [-0.5 * dt, (Y - 0.5) * dt]
 
                 im = ax.imshow(plotdata[ichannel, 0:Y, :, :],
                     interpolation='nearest',
