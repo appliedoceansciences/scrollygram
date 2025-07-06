@@ -110,12 +110,12 @@ def test_input(src):
     for logging_header_bytes, packet_bytes, padding in child:
         yield packet_bytes
 
-def get_input_source():
-    if len(sys.argv) > 1:
-        if 'test' in sys.argv[1]:
+def get_input_source(input_source_string):
+    if input_source_string is not None:
+        if 'test' in input_source_string:
             input_source = None
             yield_packet_bytes_function = test_input
-        elif 'shm' in sys.argv[1]:
+        elif 'shm' in input_source_string:
             try:
                 from shared_memory_ringbuffer_reader import shared_memory_ringbuffer_generator
             except:
@@ -126,10 +126,10 @@ def get_input_source():
                 for packet_with_logging_header in shared_memory_ringbuffer_generator(source):
                     yield packet_with_logging_header[8:]
 
-            input_source = sys.argv[1].split(':')[1] if 'shm:' in sys.argv[1] else '/cobs_to_shm'
+            input_source = input_source_string.split(':')[1] if 'shm:' in input_source_string else '/cobs_to_shm'
             yield_packet_bytes_function = yield_from_shm_and_strip_logging_header
-        elif ':' in sys.argv[1]:
-            address, port = sys.argv[1].split(':')
+        elif ':' in input_source_string:
+            address, port = input_source_string.split(':')
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((address, int(port)))
             input_source = sock.makefile('rb')
@@ -138,9 +138,9 @@ def get_input_source():
         else:
             input_source = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             input_source.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF, 4194304) #set the udp recv buffer to 4mb
-            input_source.bind(('', int(sys.argv[1])))
+            input_source.bind(('', int(input_source_string)))
             yield_packet_bytes_function = yield_packet_bytes_from_udp
-            print('listening for udp on port %u' % int(sys.argv[1]), file=sys.stderr)
+            print('listening for udp on port %u' % int(input_source_string), file=sys.stderr)
     else:
         if sys.stdin.isatty():
             print('for shm input: %s shm[:/shm_path]' % sys.argv[0], file=sys.stderr)
@@ -153,7 +153,7 @@ def get_input_source():
     return input_source, yield_packet_bytes_function
 
 def main():
-    # constants you might want to fiddle with. TODO: allow main() to modify these
+    # constants you might want to fiddle with
     clim=(-120, 0)
 
     # if not None, a tuple of phone indices to keep, starting at zero
@@ -162,6 +162,17 @@ def main():
     f0_desired = 0.0
     fh_desired = None
     dt_desired = 0.0
+
+    # support legacy method of specifying input as a single argument
+    input_source_string = sys.argv[1] if 2 == len(sys.argv) else None
+
+    # loop over pairs of arguments
+    for key, value in zip(sys.argv[1::2], sys.argv[2::2]):
+        if key == 'phonemask': phonemask = list(map(int, value.split(',')))
+        if key == 'df': df_desired = float(value)
+        if key == 'dt': dt_desired = float(value)
+        if key == 'input': input_source_string = value
+        if key == 'climit': clim = [float(x) for x in value.split(',', 1)]
 
     # global variables with deferred initialization
     nrows = 0
@@ -174,7 +185,7 @@ def main():
     ims = []
     iy = 0
 
-    input_source, yield_packet_bytes_function = get_input_source()
+    input_source, yield_packet_bytes_function = get_input_source(input_source_string)
 
     # thread-safe fifo between rx thread and main thread
     main_thread_work = queue.Queue()
