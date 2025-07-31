@@ -21,11 +21,11 @@ import matplotlib.ticker as ticker
 
 import matplotlib.pyplot as plt
 
-def packet_concatenator(nominal_length, yield_packet_bytes_function, source):
+def packet_concatenator(nominal_length, yield_packet_bytes_function, source, phonemask):
     out = None
     out_prior = None
 
-    child = yield_acoustic_packets(yield_packet_bytes_function, source, None)
+    child = yield_acoustic_packets(yield_packet_bytes_function, source, phonemask)
     packet = next(child, None)
     if not packet: return
 
@@ -55,8 +55,8 @@ def on_close(event):
     window_closed = True
 
 # turns a generator into a child thread which yields functions and arguments to main thread
-def child_thread(main_thread_work, nominal_length, yield_packet_bytes_function, source):
-    for packet in packet_concatenator(nominal_length, yield_packet_bytes_function, source):
+def child_thread(main_thread_work, nominal_length, yield_packet_bytes_function, source, phonemask):
+    for packet in packet_concatenator(nominal_length, yield_packet_bytes_function, source, phonemask):
         if window_closed: break
         main_thread_work.put(packet)
 
@@ -66,6 +66,46 @@ def child_thread(main_thread_work, nominal_length, yield_packet_bytes_function, 
 def yield_packet_bytes_from_udp(source):
     while True:
         yield source.recvfrom(1500)[0]
+
+def get_input_source(input_source_string):
+    if input_source_string is not None:
+        if 'shm' in input_source_string:
+            try:
+                from shared_memory_ringbuffer_reader import shared_memory_ringbuffer_generator
+            except:
+                raise RuntimeError('shared memory input not supported')
+
+            # hack to peel off logging headers
+            def yield_from_shm_and_strip_logging_header(source):
+                for packet_with_logging_header in shared_memory_ringbuffer_generator(source):
+                    yield packet_with_logging_header[8:]
+
+            input_source = input_source_string.split(':')[1] if 'shm:' in input_source_string else '/cobs_to_shm'
+            yield_packet_bytes_function = yield_from_shm_and_strip_logging_header
+        elif ':' in input_source_string:
+            address, port = input_source_string.split(':')
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((address, int(port)))
+            input_source = sock.makefile('rb')
+            yield_packet_bytes_function = yield_packet_bytes_from_log_stream
+            print('connected to %s:%u via tcp' % (address, int(port)), file=sys.stderr)
+        else:
+            input_source = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            input_source.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF, 4194304) #set the udp recv buffer to 4mb
+            input_source.bind(('', int(input_source_string)))
+            yield_packet_bytes_function = yield_packet_bytes_from_udp
+            print('listening for udp on port %u' % int(input_source_string), file=sys.stderr)
+    else:
+        if sys.stdin.isatty():
+            print('for shm input: %s shm[:/shm_path]' % sys.argv[0], file=sys.stderr)
+            print('for tcp input: %s host:port' % sys.argv[0], file=sys.stderr)
+            print('for udp input: %s port' % sys.argv[0], file=sys.stderr)
+            print('for stdin input: cat whatever*.bin | %s' % sys.argv[0], file=sys.stderr)
+            exit(1)
+        input_source = sys.stdin.buffer
+        yield_packet_bytes_function = yield_packet_bytes_from_log_stream
+    return input_source, yield_packet_bytes_function
+
 
 def main():
     phonemask = None
@@ -77,40 +117,15 @@ def main():
     xdata = None
     nominal_length = 0.03
 
-    # constants you might want to fiddle with. TODO: allow main() to modify these
-    clim=(20 + 45, 86 + 45)
+    # support legacy method of specifying input as a single argument
+    input_source_string = sys.argv[1] if 2 == len(sys.argv) else None
 
-    if len(sys.argv) > 1:
-        if 'shm' in sys.argv[1]:
-            try:
-                from shared_memory_ringbuffer_reader import shared_memory_ringbuffer_generator
-            except:
-                raise RuntimeError('shared memory input not supported')
+    # loop over pairs of arguments
+    for key, value in zip(sys.argv[1::2], sys.argv[2::2]):
+        if key == 'phonemask': phonemask = list(map(int, value.split(',')))
+        if key == 'input': input_source_string = value
 
-            # hack to peel off logging headers
-            def yield_from_shm_and_strip_logging_header(source):
-                for packet_with_logging_header in shared_memory_ringbuffer_generator(source):
-                    yield packet_with_logging_header[8:]
-
-            input_source = sys.argv[1].split(':')[1] if 'shm:' in sys.argv[1] else '/cobs_to_shm'
-            yield_packet_bytes_function = yield_from_shm_and_strip_logging_header
-        elif ':' in sys.argv[1]:
-            address, port = sys.argv[1].split(':')
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((address, int(port)))
-            input_source = sock.makefile('rb')
-            yield_packet_bytes_function = yield_packet_bytes_from_log_stream
-            print('connected to %s:%u via tcp' % (address, int(port)), file=sys.stderr)
-        else:
-            input_source = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            input_source.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF, 4194304) #set the udp recv buffer to 4mb
-            input_source.bind(('', int(sys.argv[1])))
-            yield_packet_bytes_function = yield_packet_bytes_from_udp
-            print('listening for udp on port %u' % int(sys.argv[1]), file=sys.stderr)
-    else:
-        print('listening for input on stdin. if udp input is desired, specify a port number to listen on. if tcp is desired, specify an address:port to connect to', file=sys.stderr)
-        input_source = sys.stdin.buffer
-        yield_packet_bytes_function = yield_packet_bytes_from_log_stream
+    input_source, yield_packet_bytes_function = get_input_source(input_source_string)
 
     # create an empty figure but don't show it yet
     fig = plt.figure()
@@ -123,7 +138,7 @@ def main():
     # start a child thread which accept output yielded from one of two possible generators
     # depending on whether stdin is a tty, and safely communicate that generator output
     # and what to do with it back to the main thread via the work queue
-    pth = threading.Thread(target=child_thread, args=(main_thread_work, nominal_length, yield_packet_bytes_function, input_source))
+    pth = threading.Thread(target=child_thread, args=(main_thread_work, nominal_length, yield_packet_bytes_function, input_source, phonemask))
     pth.start()
 
     # event loop which dequeues work from other threads that must be done on main thread
