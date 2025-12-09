@@ -18,6 +18,7 @@ from _posixshmem import shm_open
 
 def pid_is_still_alive(pid):
     try: os.kill(pid, 0)
+    except PermissionError: return True
     except: return False
     return True
 
