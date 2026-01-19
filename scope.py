@@ -167,6 +167,8 @@ def main():
             # label the x axis for the subplots on the bottom
             ax.set(ylabel='Amplitude')
 
+            ax.legend(range(C))
+
             fig.tight_layout(pad=1.5)
             fig.canvas.draw()
             fig.show()
