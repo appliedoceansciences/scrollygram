@@ -11,6 +11,7 @@ import sys
 import threading
 import queue
 import math
+import signal
 
 # This provides the generator function which knows how to extract sensor-agnostic frames of
 # acoustic sample data from whatever possibly sensor-specific format they are coming from
@@ -150,6 +151,7 @@ def get_input_source(input_source_string):
             exit(1)
         input_source = sys.stdin.buffer
         yield_packet_bytes_function = yield_packet_bytes_from_log_stream
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
     return input_source, yield_packet_bytes_function
 
 def main():
