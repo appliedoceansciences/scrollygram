@@ -256,7 +256,7 @@ def main():
                 # label the x axis for the subplots on the bottom
                 if ((ichannel // ncols) % nrows) == nrows - 1: ax.set(xlabel='Frequency (kHz)')
 
-            # add padding to the figure -- less when the number of channles is larger
+            # TODO: clean up ad hoc padding logic
             if C <= 8:
                 fig.tight_layout(pad=1.5)
             elif (C > 8) & (C <= 12):
