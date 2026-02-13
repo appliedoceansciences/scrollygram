@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # this is a generic processing pipeline in the form of a series of nested generator
-# functions, whic accepts numpy arrays of blocks of samples from some sensor-specific
+# functions, which accepts numpy arrays of blocks of samples from some sensor-specific
 # upstream generator, and in turn yields incoherently averaged fft frames to its caller
 
 import sys
