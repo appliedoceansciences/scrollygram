@@ -23,10 +23,10 @@ def parse_acoustic_packet(packet_bytes):
     # validate packet header, part one
     if magic != 0x45: return None
 
-    # interpret lowest two bits of flags field as the data type
-    dtype = 'h' if (flags & 0x3 == 0) else 'i' if (flags & 0x3 == 1) else 'f' if (flags & 0x3) else 'int24'
+    # interpret lowest three bits of flags field as the data type
+    dtype = 'h' if (flags & 0x7 == 0) else 'i' if (flags & 0x7 == 1) else 'f' if (flags & 0x7 == 3) else 'i1' if (flags & 0x7 == 0b100) else 'int24'
 
-    sizeof_sample = 2 if (dtype == 'h') else 4 if (dtype == 'i') else 3 if (dtype == 'int24') else 4
+    sizeof_sample = 2 if (dtype == 'h') else 4 if (dtype == 'i') else 3 if (dtype == 'int24') else 1 if dtype == 'i1' else 4
     samples_per_channel_per_packet = (len(packet_bytes) - 16) // (channels * sizeof_sample)
 
     # validate packet header, part two
