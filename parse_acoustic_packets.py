@@ -39,7 +39,7 @@ def parse_acoustic_packet(packet_bytes):
     # interpret the data segment as a numpy array with the given shape and dtype
     samples = np.ndarray((samples_per_channel_per_packet, channels), buffer=packet_bytes[16:], dtype=dtype)
 
-    fullscale = 32767.0 if (flags & 0x3 == 0) else 2147483647.0 if (flags & 0x3 == 1) else 1.0 if (flags & 0x3) else 8388607.0
+    fullscale = 32767.0 if (flags & 0x7 == 0) else 2147483647.0 if (flags & 0x7 == 1) else 1.0 if (flags & 0x7 == 3) else 127.0 if (flags & 0x7 == 0b100) else 8388607.0
 
     # reassemble timestamp in unix seconds
     timestamp_microseconds = ((timestamp_msbs << 16) | timestamp_lsbs) * 16
