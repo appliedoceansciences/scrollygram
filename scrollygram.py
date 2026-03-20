@@ -164,6 +164,7 @@ def main():
     f0_desired = 0.0
     fh_desired = None
     dt_desired = 0.0
+    title = 'scrollygram'
 
     # support legacy method of specifying input as a single argument
     input_source_string = sys.argv[1] if 2 == len(sys.argv) else None
@@ -174,6 +175,7 @@ def main():
         if key == 'df': df_desired = float(value)
         if key == 'dt': dt_desired = float(value)
         if key == 'input': input_source_string = value
+        if key == 'title': title = value
         if key == 'climit': clim = [float(x) for x in value.split(',', 1)]
 
     # global variables with deferred initialization
@@ -194,7 +196,7 @@ def main():
 
     # create an empty figure but don't show it yet
     fig = plt.figure()
-
+    fig.canvas.manager.set_window_title(title)
     fig.canvas.mpl_connect('close_event', on_close)
 
     # start a child thread which accepts output yielded from one of several possible generators
