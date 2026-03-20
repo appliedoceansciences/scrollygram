@@ -164,8 +164,7 @@ def main():
     f0_desired = 0.0
     fh_desired = None
     dt_desired = 0.0
-    title = 'scrollygram'
-
+    title = None
     # support legacy method of specifying input as a single argument
     input_source_string = sys.argv[1] if 2 == len(sys.argv) else None
 
@@ -196,7 +195,8 @@ def main():
 
     # create an empty figure but don't show it yet
     fig = plt.figure()
-    fig.canvas.manager.set_window_title(title)
+    if title is not None:
+        fig.canvas.manager.set_window_title(title)
     fig.canvas.mpl_connect('close_event', on_close)
 
     # start a child thread which accepts output yielded from one of several possible generators
@@ -250,7 +250,10 @@ def main():
                 # override an expensive method inside matplotlib that tries to do too much
                 im._make_image = _make_image_override.__get__(im, matplotlib.image.AxesImage)
 
-                ax.set(title='channel ' + str(ichannel))
+                if 1 == C and title is not None:
+                    ax.set(title=title)
+                else:
+                    ax.set(title='channel ' + str(ichannel))
 
                 # label the y axis for the subplots on the left side
                 if (ichannel % ncols) == 0: ax.set(ylabel='Time (s) in past')
