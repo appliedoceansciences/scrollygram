@@ -107,7 +107,7 @@ def yield_acoustic_packets(yield_packet_bytes_function, source, phonemask):
         samples_yielded += packet.samples.shape[0]
 
         if phonemask is not None:
-            packet = packet_tuple(samples=np.take(packet.samples, phonemask, axis=1), timestamp=packet.timestamp, fs=packet.fs, seqnum=packet.seqnum, fullscale=packet.fullscale)
+            packet = packet_tuple(samples=np.take(packet.samples, phonemask, axis=1), timestamp=packet.timestamp, fs=packet.fs, seqnum=packet.seqnum, fullscale=packet.fullscale, timestamp_microseconds=packet.timestamp_microseconds)
 
         yield packet
 
