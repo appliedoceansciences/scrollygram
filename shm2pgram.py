@@ -93,7 +93,7 @@ def incoherent_cqt_frames_generator(bins_per_octave, args_for_incoherent_fft_fra
         # save the index limits and the vector of weights so we can apply it to the data
         weights_list.append((iw_start, iw_stop, weight))
 
-    averaged_frame = namedtuple('averaged_frame', ('intensity', 'f0', 'df', 'dt', 'bins_per_octave'))
+    averaged_frame = namedtuple('averaged_frame', ('timestamp_microseconds', 'intensity', 'f0', 'df', 'dt', 'bins_per_octave'))
 
     while frame is not None:
         out = np.empty((C, X), dtype=np.single)
@@ -104,7 +104,8 @@ def incoherent_cqt_frames_generator(bins_per_octave, args_for_incoherent_fft_fra
             for ic in range(C):
                 out[ic, ibin + linear_bins_from_dc - 2] = np.dot(weight, frame.bins[ic, iw_start:iw_stop])
 
-        yield averaged_frame(intensity=out,
+        yield averaged_frame(timestamp_microseconds=frame.timestamp_microseconds,
+                             intensity=out,
                              f0=0,
                              df=df,
                              dt=dt,
@@ -142,6 +143,6 @@ def main():
         clow = chigh - 256.0 * cstep
 
         bins_rounded = np.round((10.0 * np.log10(np.mean(packet.intensity, axis=0)) - clow) / cstep)
-        print('{ "df": %.3f, "dt": %.3f, "bins_per_octave": %u, "pgram": "%s" } ' % ( packet.df, packet.dt, packet.bins_per_octave, base64.b64encode(bins_rounded.astype(np.int8)).decode('utf-8')), flush=True)
+        print('{ "time": %u.%06u, "df": %.3f, "dt": %.3f, "bins_per_octave": %u, "pgram": "%s" } ' % (packet.timestamp_microseconds // 1000000, packet.timestamp_microseconds % 1000000, packet.df, packet.dt, packet.bins_per_octave, base64.b64encode(bins_rounded.astype(np.int8)).decode('utf-8')), flush=True)
 
 main()
