@@ -134,7 +134,15 @@ def main():
         if key == 'dt': dt_desired = float(value)
         if key == 'input': input_source_string = value
 
-    for packet in incoherent_cqt_frames_generator(bins_per_octave, (df_desired, dt_desired, f0_desired, fh_desired, yield_acoustic_packets, (yield_from_shm_and_strip_logging_header, input_source_string, phonemask))):
+    if input_source_string is not None:
+        input_source = input_source_string
+        yield_packet_bytes_function = yield_from_shm_and_strip_logging_header
+    else:
+        input_source = sys.stdin.buffer
+        yield_packet_bytes_function = yield_packet_bytes_from_log_stream
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    for packet in incoherent_cqt_frames_generator(bins_per_octave, (df_desired, dt_desired, f0_desired, fh_desired, yield_acoustic_packets, (yield_packet_bytes_function, input_source, phonemask))):
 
         C = packet.intensity.shape[0]
 
