@@ -101,8 +101,7 @@ def incoherent_cqt_frames_generator(bins_per_octave, args_for_incoherent_fft_fra
 
         for ibin in range(log_bins):
             iw_start, iw_stop, weight = weights_list[ibin]
-            for ic in range(C):
-                out[ic, ibin + linear_bins_from_dc - 2] = np.dot(weight, frame.bins[ic, iw_start:iw_stop])
+            out[:, ibin + linear_bins_from_dc - 2] = np.dot(frame.bins[:, iw_start:iw_stop], weight)
 
         yield averaged_frame(timestamp_microseconds=frame.timestamp_microseconds,
                              intensity=out,
