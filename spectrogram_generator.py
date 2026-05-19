@@ -154,7 +154,7 @@ def incoherent_fft_frame_generator(df_desired, dt_desired, f0_desired, fh_desire
     # number of consecutive fft frames to accumulate in each output pixel vs time
     incoherent_stacking = round(dt_desired / dt_per_frame) if dt_desired > dt_per_frame else 1
 
-    print('stacking %u consecutive fft frames for each output frame' % incoherent_stacking, file=sys.stderr)
+    print('stacking %u consecutive 50%% overlapped ffts for %g s spacing ' % (incoherent_stacking, dt_per_frame * incoherent_stacking), file=sys.stderr)
 
     istack = 0
 
