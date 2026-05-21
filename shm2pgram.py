@@ -119,7 +119,7 @@ def main():
     df_desired = None
     f0_desired = 0.0
     fh_desired = None
-    dt_desired = 1.0
+    dt_desired = 0.125
     bins_per_octave = 48
     micropascals_per_lsb = 1
 
