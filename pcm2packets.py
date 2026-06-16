@@ -52,21 +52,22 @@ def pcm2packets(src, input_dtype_string, C, sample_rate, t0):
 
         seqnum = (seqnum + 1) % 65536
 
-def main():
-    input_dtype_string = 'int16'
-    sample_rate = 31250.0
-    C = 1
-    t0 = 1725898437.0
+if __name__ == '__main__':
+    def main():
+        input_dtype_string = 'int16'
+        sample_rate = 31250.0
+        C = 1
+        t0 = 1725898437.0
 
-    # loop over pairs of arguments
-    for key, value in zip(sys.argv[1::2], sys.argv[2::2]):
-        if key == 'fs': sample_rate = float(value)
-        if key == 'C': C = int(value)
-        if key == 'dtype': input_dtype_string = value
-        if key == 't0': t0 = float(value)
+        # loop over pairs of arguments
+        for key, value in zip(sys.argv[1::2], sys.argv[2::2]):
+            if key == 'fs': sample_rate = float(value)
+            if key == 'C': C = int(value)
+            if key == 'dtype': input_dtype_string = value
+            if key == 't0': t0 = float(value)
 
-    for logging_header_bytes, packet_bytes, padding in pcm2packets(sys.stdin.buffer, input_dtype_string, C, sample_rate, t0):
-        sys.stdout.buffer.write(logging_header_bytes + packet_bytes + padding)
-        sys.stdout.buffer.flush()
+        for logging_header_bytes, packet_bytes, padding in pcm2packets(sys.stdin.buffer, input_dtype_string, C, sample_rate, t0):
+            sys.stdout.buffer.write(logging_header_bytes + packet_bytes + padding)
+            sys.stdout.buffer.flush()
 
-main()
+    main()
