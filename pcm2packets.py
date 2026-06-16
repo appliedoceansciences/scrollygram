@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # this is a quick and dirty script which ingests raw pcm in the expected format on stdin,
 # and emits the same data with logging and acoustic packet headers prepended s.t. packets
-# of not more than 1500 bytes are emitted, in the format expected by the dsp
+# of not more than 1472 bytes are emitted, in the format expected by the dsp
 
 import struct
 import sys
@@ -9,8 +9,8 @@ import sys
 def pcm2packets(src, input_dtype_string, C, sample_rate, t0):
     itemsize = 2 if input_dtype_string == 'int16' else 4
 
-    # number of samples per packet is maximum number s.t. packet size is not more than 1500 bytes
-    T = (1500 - 16) // (itemsize * C)
+    # number of samples per packet is maximum number s.t. packet size is not more than 1472 bytes
+    T = (1472 - 16) // (itemsize * C)
 
     packet_size = 16 + itemsize * C * T
     packet_size_with_padding = (packet_size + 7) & ~7
