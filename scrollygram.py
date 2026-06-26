@@ -125,7 +125,10 @@ def get_input_source(input_source_string):
             # hack to peel off logging headers
             def yield_from_shm_and_strip_logging_header(source):
                 for packet_with_logging_header in shared_memory_ringbuffer_generator(source):
-                    yield packet_with_logging_header[8:]
+                    packet_bytes = packet_with_logging_header[8:]
+                    packet_size, timestamp_lsbs, timestamp_msbs = struct.unpack('<HHI', packet_with_logging_header[0:8])
+                    logged_timestamp_microseconds = ((timestamp_msbs << 16) | timestamp_lsbs) * 16
+                    yield packet_with_logging_header[8:], logged_timestamp_microseconds
 
             input_source = input_source_string.split(':')[1] if 'shm:' in input_source_string else '/cobs_to_shm'
             yield_packet_bytes_function = yield_from_shm_and_strip_logging_header

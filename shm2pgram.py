@@ -28,7 +28,10 @@ def round_up_to_next_multiple_of(a, q):
 
 def yield_from_shm_and_strip_logging_header(source):
     for packet_with_logging_header in shared_memory_ringbuffer_generator(source):
-        yield packet_with_logging_header[8:]
+        packet_bytes = packet_with_logging_header[8:]
+        packet_size, timestamp_lsbs, timestamp_msbs = struct.unpack('<HHI', packet_with_logging_header[0:8])
+        logged_timestamp_microseconds = ((timestamp_msbs << 16) | timestamp_lsbs) * 16
+        yield packet_with_logging_header[8:], logged_timestamp_microseconds
 
 def incoherent_cqt_frames_generator(bins_per_octave, args_for_incoherent_fft_frames_generator):
     child = incoherent_fft_frame_generator(*args_for_incoherent_fft_frames_generator)
