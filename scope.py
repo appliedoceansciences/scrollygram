@@ -63,10 +63,6 @@ def child_thread(main_thread_work, nominal_length, yield_packet_bytes_function, 
     # inform main thread that child generator has reached eof and no more input is coming
     main_thread_work.put(None)
 
-def yield_packet_bytes_from_udp(source):
-    while True:
-        yield source.recvfrom(1500)[0]
-
 def get_input_source(input_source_string):
     if input_source_string is not None:
         if 'shm' in input_source_string:
@@ -93,16 +89,11 @@ def get_input_source(input_source_string):
             yield_packet_bytes_function = yield_packet_bytes_from_log_stream
             print('connected to %s:%u via tcp' % (address, int(port)), file=sys.stderr)
         else:
-            input_source = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            input_source.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF, 4194304) #set the udp recv buffer to 4mb
-            input_source.bind(('', int(input_source_string)))
-            yield_packet_bytes_function = yield_packet_bytes_from_udp
-            print('listening for udp on port %u' % int(input_source_string), file=sys.stderr)
+            raise RuntimeError('input type not recognized')
     else:
         if sys.stdin.isatty():
             print('for shm input: %s shm[:/shm_path]' % sys.argv[0], file=sys.stderr)
             print('for tcp input: %s host:port' % sys.argv[0], file=sys.stderr)
-            print('for udp input: %s port' % sys.argv[0], file=sys.stderr)
             print('for stdin input: cat whatever*.bin | %s' % sys.argv[0], file=sys.stderr)
             exit(1)
         input_source = sys.stdin.buffer
