@@ -4,6 +4,7 @@ import threading
 import queue
 import socket
 import numpy as np
+import struct
 from collections import namedtuple
 
 # This provides the generator function which knows how to extract sensor-agnostic frames of

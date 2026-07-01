@@ -7,6 +7,7 @@ import queue
 import math
 import signal
 import base64
+import struct
 from collections import namedtuple
 
 # This provides the generator function which knows how to extract sensor-agnostic frames of

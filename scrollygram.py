@@ -11,6 +11,7 @@ import sys
 import threading
 import queue
 import math
+import struct
 import signal
 
 # This provides the generator function which knows how to extract sensor-agnostic frames of
