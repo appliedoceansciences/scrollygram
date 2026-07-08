@@ -125,7 +125,6 @@ def main():
     fh_desired = None
     dt_desired = 0.125
     bins_per_octave = 48
-    micropascals_per_lsb = 1
 
     # support legacy method of specifying input as a single argument
     input_source_string = sys.argv[1] if 2 == len(sys.argv) else None
@@ -136,6 +135,7 @@ def main():
         if key == 'df': df_desired = float(value)
         if key == 'dt': dt_desired = float(value)
         if key == 'input': input_source_string = value
+        if key == 'bins_per_octave' or key == 'bands_per_octave': bins_per_octave = float(value)
 
     if input_source_string is not None:
         input_source = input_source_string
