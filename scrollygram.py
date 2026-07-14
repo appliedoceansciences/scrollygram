@@ -6,6 +6,7 @@
 # which eventually yields FFT'd, incoherently averaged frames of frequency bins, as they
 # become ready, to the plotter in this file.
 
+import argparse
 import socket
 import sys
 import threading
@@ -150,27 +151,22 @@ def get_input_source(input_source_string):
     return input_source, yield_packet_bytes_function
 
 def main():
-    # constants you might want to fiddle with
-    clim=(-120, 0)
-
     # if not None, a tuple of phone indices to keep, starting at zero
-    phonemask = None
-    df_desired = None
     f0_desired = 0.0
     fh_desired = None
-    dt_desired = 0.0
-    title = None
-    # support legacy method of specifying input as a single argument
-    input_source_string = sys.argv[1] if 2 == len(sys.argv) else None
 
-    # loop over pairs of arguments
-    for key, value in zip(sys.argv[1::2], sys.argv[2::2]):
-        if key == 'phonemask': phonemask = list(map(int, value.split(',')))
-        if key == 'df': df_desired = float(value)
-        if key == 'dt': dt_desired = float(value)
-        if key == 'input': input_source_string = value
-        if key == 'title': title = value
-        if key == 'climit': clim = [float(x) for x in value.split(',', 1)]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input', nargs='?', default=None, help='The shm segment or TCP IP and port connect to to, if not reading from stdin')
+    parser.add_argument('--channels', default=None, help='Comma-separated list of subset of multiple channel input to use')
+    parser.add_argument('--df', default=None, type=float, help='Desired frequency bin spacing in Hz')
+    parser.add_argument('--dt', default=0.125, type=float, help='Desired time resolution in seconds')
+    parser.add_argument('--climit', default=None, help='Comma-separated pair of lower and upper limits of colormap')
+    parser.add_argument('--title', default=None, help='Plot title')
+    a = parser.parse_args()
+
+    input_source_string, df_desired, dt_desired, title = a.input, a.df, a.dt, a.title
+    phonemask = list(map(int, a.channels.split(','))) if a.channels else None
+    clim = [float(x) for x in value.split(',', 1)] if a.climit else (-120, 0)
 
     # global variables with deferred initialization
     nrows = 0
