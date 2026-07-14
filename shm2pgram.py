@@ -130,7 +130,8 @@ def main():
     parser.add_argument('--bins_per_octave', default=48, type=float, help='Number of output frequency bins per octave in the log-spaced region')
 
     a = parser.parse_args()
-    input_source_string, phonemask, df_desired, dt_desired, bins_per_octave = a.input, a.channels, a.df, a.dt, a.bins_per_octave
+    input_source_string, df_desired, dt_desired, bins_per_octave = a.input, a.df, a.dt, a.bins_per_octave
+    phonemask = list(map(int, a.channels.split(','))) if a.channels else None
 
     if input_source_string is not None:
         input_source = input_source_string
