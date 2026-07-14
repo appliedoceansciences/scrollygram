@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # usage: ssh remotehost shm2pgram.py /cobs_to_shm | ./scroll_gram_from_json.py
+import argparse
 import socket
 import sys
 import threading
@@ -118,24 +119,18 @@ def incoherent_cqt_frames_generator(bins_per_octave, args_for_incoherent_fft_fra
 
 
 def main():
-    # if not None, a tuple of phone indices to keep, starting at zero
-    phonemask = None
-    df_desired = None
     f0_desired = 0.0
     fh_desired = None
-    dt_desired = 0.125
-    bins_per_octave = 48
 
-    # support legacy method of specifying input as a single argument
-    input_source_string = sys.argv[1] if 2 == len(sys.argv) else None
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input', nargs='?', default=None, help='Name of the shm segment to connect to, if not reading from stdin')
+    parser.add_argument('--channels', default=None, help='Comma-separated list of subset of multiple channel input to use')
+    parser.add_argument('--df', default=None, type=float, help='Desired frequency bin spacing in Hz')
+    parser.add_argument('--dt', default=0.125, type=float, help='Desired time resolution in seconds')
+    parser.add_argument('--bins_per_octave', default=48, type=float, help='Number of output frequency bins per octave in the log-spaced region')
 
-    # loop over pairs of arguments
-    for key, value in zip(sys.argv[1::2], sys.argv[2::2]):
-        if key == 'phonemask': phonemask = list(map(int, value.split(',')))
-        if key == 'df': df_desired = float(value)
-        if key == 'dt': dt_desired = float(value)
-        if key == 'input': input_source_string = value
-        if key == 'bins_per_octave' or key == 'bands_per_octave': bins_per_octave = float(value)
+    a = parser.parse_args()
+    input_source_string, phonemask, df_desired, dt_desired, bins_per_octave = a.input, a.channels, a.df, a.dt, a.bins_per_octave
 
     if input_source_string is not None:
         input_source = input_source_string
