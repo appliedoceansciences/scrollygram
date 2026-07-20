@@ -3,11 +3,10 @@
 
 import struct
 import sys
-import numpy as np
 
 from pcm2packets import pcm2packets
 
-input_dtype = np.int16
+input_dtype_string = 'int16'
 fs = 31250.0
 C = 1
 t0 = 1725898437.0
@@ -27,19 +26,17 @@ while True:
         section_length -= 16
 
         if 3 == dtype_int:
-            input_dtype = np.single
+            input_dtype_string = 'single'
         elif 1 == dtype_int and 32 == bits_per_sample:
-            input_dtype = np.int32
+            input_dtype_string = 'int32'
         elif 1 == dtype_int and 16 == bits_per_sample:
-            input_dtype = np.int16
-        elif 1 == dtype_int and 8 == bits_per_sample:
-            input_dtype = np.int8
+            input_dtype_string = 'int16'
         else:
             raise RuntimeError('unhandled wav format')
 
     if b'data' == section: break
     sys.stdin.buffer.read(section_length)
 
-for logging_header_bytes, packet_bytes, padding in pcm2packets(sys.stdin.buffer, input_dtype, C, fs, t0):
+for logging_header_bytes, packet_bytes, padding in pcm2packets(sys.stdin.buffer, input_dtype_string, C, fs, t0):
     sys.stdout.buffer.write(logging_header_bytes + packet_bytes + padding)
     sys.stdout.buffer.flush()
