@@ -9,6 +9,8 @@ import math
 import signal
 import base64
 import struct
+import resource
+import platform
 from collections import namedtuple
 
 # This provides the generator function which knows how to extract sensor-agnostic frames of
@@ -151,5 +153,7 @@ def main():
 
         bins_rounded = np.round((10.0 * np.log10(np.mean(packet.intensity, axis=0)) - clow) / cstep)
         print('{ "time": %u.%06u, "df": %.3f, "dt": %.3f, "bins_per_octave": %u, "pgram": "%s" } ' % (packet.timestamp_microseconds // 1000000, packet.timestamp_microseconds % 1000000, packet.df, packet.dt, packet.bins_per_octave, base64.b64encode(bins_rounded.astype(np.int8)).decode('utf-8')), flush=True)
+
+    print('maxrss is %.1f MB' % ((resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / (1024.0 if 'Linux' == platform.system() else 1048576.0)), file=sys.stderr)
 
 main()
