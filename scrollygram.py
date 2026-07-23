@@ -160,13 +160,14 @@ def main():
     parser.add_argument('--channels', default=None, help='Comma-separated list of subset of multiple channel input to use')
     parser.add_argument('--df', default=None, type=float, help='Desired frequency bin spacing in Hz')
     parser.add_argument('--dt', default=0.125, type=float, help='Desired time resolution in seconds')
-    parser.add_argument('--climit', default=None, help='Comma-separated pair of lower and upper limits of colormap')
+    parser.add_argument('--cfloor', default=-120, type=float, help='Lower bound on colormap')
+    parser.add_argument('--crange', default=90, type=float, help='Range of colormap')
     parser.add_argument('--title', default=None, help='Plot title')
     a = parser.parse_args()
 
     input_source_string, df_desired, dt_desired, title = a.input, a.df, a.dt, a.title
     phonemask = list(map(int, a.channels.split(','))) if a.channels else None
-    clim = [float(x) for x in value.split(',', 1)] if a.climit else (-120, 0)
+    clim = (a.cfloor, a.cfloor + a.crange)
 
     # global variables with deferred initialization
     nrows = 0
