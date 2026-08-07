@@ -124,6 +124,8 @@ def main():
     f0_desired = 0.0
     fh_desired = None
 
+    asset = socket.gethostname()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('input', nargs='?', default=None, help='Name of the shm segment to connect to, if not reading from stdin')
     parser.add_argument('--channels', default=None, help='Comma-separated list of subset of multiple channel input to use')
@@ -155,10 +157,10 @@ def main():
         if a.per_channel and C > 1:
             for ic in range(C):
                 bins_rounded = np.round((10.0 * np.log10(packet.intensity[ic, :]) - clow) / cstep)
-                print('{ "time": %u.%06u, "df": %.3f, "dt": %.3f, "bins_per_octave": %u, "channel": %u, "pgram": "%s" } ' % (packet.timestamp_microseconds // 1000000, packet.timestamp_microseconds % 1000000, packet.df, packet.dt, packet.bins_per_octave, ic, base64.b64encode(bins_rounded.astype(np.int8)).decode('utf-8')), flush=True)
+                print('{ "time": %u.%06u, "asset": "%s", "df": %.3f, "dt": %.3f, "bins_per_octave": %u, "channel": %u, "pgram": "%s" } ' % (packet.timestamp_microseconds // 1000000, packet.timestamp_microseconds % 1000000, asset, packet.df, packet.dt, packet.bins_per_octave, ic, base64.b64encode(bins_rounded.astype(np.int8)).decode('utf-8')), flush=True)
         else:
             bins_rounded = np.round((10.0 * np.log10(np.mean(packet.intensity, axis=0)) - clow) / cstep)
-            print('{ "time": %u.%06u, "df": %.3f, "dt": %.3f, "bins_per_octave": %u, "pgram": "%s" } ' % (packet.timestamp_microseconds // 1000000, packet.timestamp_microseconds % 1000000, packet.df, packet.dt, packet.bins_per_octave, base64.b64encode(bins_rounded.astype(np.int8)).decode('utf-8')), flush=True)
+            print('{ "time": %u.%06u, "asset": "%s", "df": %.3f, "dt": %.3f, "bins_per_octave": %u, "pgram": "%s" } ' % (packet.timestamp_microseconds // 1000000, packet.timestamp_microseconds % 1000000, asset, packet.df, packet.dt, packet.bins_per_octave, base64.b64encode(bins_rounded.astype(np.int8)).decode('utf-8')), flush=True)
 
     print('maxrss is %.1f MB' % ((resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / (1024.0 if 'Linux' == platform.system() else 1048576.0)), file=sys.stderr)
 
