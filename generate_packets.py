@@ -12,9 +12,7 @@ def generate_packets_with_dithered_tone(duration, throttle, t, C, tone_frequency
 
     # number of samples per packet is maximum number s.t. packet size is not more than 1500 bytes
     if T_per_block is None:
-        T_per_block = (1500 - 16) // (itemsize * C)
-
-    print('T_per_block = %u' % T_per_block, file=sys.stderr)
+        T_per_block = 1024 // (itemsize * C)
 
     blocks_to_yield = int(round(duration * fs)) // T_per_block
     if duration > 0 and blocks_to_yield == 0: blocks_to_yield = 1
@@ -63,16 +61,16 @@ def generate_packets_with_dithered_tone(duration, throttle, t, C, tone_frequency
         iblock += 1
 
 if __name__ == '__main__':
-    fs = 8000
+    fs = 31250
     C = 1
-    dtype = np.single
+    dtype = np.int16
 
     tone_frequency = 440
 
     tone_amplitude = 32766.0 / 32767.0
     tpdf_amplitude = 1.0 / 32767.0
 
-    throttle = 0
+    throttle = 1
     duration = 0
 
     t = 1725898437.0
