@@ -88,7 +88,13 @@ def yield_acoustic_packets(yield_packet_bytes_function, source, phonemask):
     for packet_bytes, logged_timestamp_microseconds in yield_packet_bytes_function(source):
         # attempt to parse the packet bytes as an acoustic packet
         packet = parse_acoustic_packet(packet_bytes, logged_timestamp_microseconds)
-        if not packet: continue
+        if not packet:
+            try:
+                tmp = str(packet_bytes, 'utf-8')
+                if tmp.isprintable():
+                    print(tmp, file=sys.stderr)
+            except: continue
+            continue
 
         # emit some diagnostic text on the first packet
         if seqnum_prev is None:
