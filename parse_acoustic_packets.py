@@ -102,7 +102,7 @@ def yield_acoustic_packets(yield_packet_bytes_function, source, phonemask):
         else:
             packets_missing = (packet.seqnum - seqnum_prev - 1) % 65536
             if packets_missing != 0:
-                print('warning: expected seqnum %u, got %u, missing %u packets (%g s)' % ((seqnum_prev + 1) % 65536, packet.seqnum, packets_missing, packets_missing * packet.samples.shape[0] / sample_rate), file=sys.stderr)
+                print('warning: at %s / %s: expected seqnum %u, got %u, missing %u packets (%g s)' % (datestr_from_unix_microseconds(packet.timestamp_microseconds), datestr_from_unix_microseconds(logged_timestamp_microseconds), (seqnum_prev + 1) % 65536, packet.seqnum, packets_missing, packets_missing * packet.samples.shape[0] / sample_rate), file=sys.stderr)
         seqnum_prev = packet.seqnum
         timestamp_prev = packet.timestamp_microseconds
         samples_yielded += packet.samples.shape[0]
