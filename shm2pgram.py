@@ -85,7 +85,7 @@ def incoherent_cqt_frames_generator(bins_per_octave, args_for_incoherent_fft_fra
         delta = np.arange(iw_start, iw_stop) - iwf_mid
 
         # vector of Gaussian weights
-        weight = np.exp(-0.5 * (delta * delta / (sigma * sigma)))
+        weight = np.exp(-0.5 * (delta * delta / (sigma * sigma))).astype(np.single)
         weight_sum = np.sum(weight)
 
         # renormalize the weights to account for their desired integral and the actual sum,
