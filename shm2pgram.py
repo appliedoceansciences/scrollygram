@@ -9,6 +9,7 @@ import base64
 import struct
 import resource
 import platform
+import time
 from collections import namedtuple
 
 # This provides the generator function which knows how to extract sensor-agnostic frames of
@@ -141,6 +142,10 @@ def main():
         yield_packet_bytes_function = yield_packet_bytes_from_log_stream
         signal.signal(signal.SIGINT, signal.SIG_IGN)
 
+    monotonic_time_prior = None
+    throughput_num = 0
+    throughput_den = 0
+
     for packet in incoherent_cqt_frames_generator(bins_per_octave, (df_desired, dt_desired, f0_desired, fh_desired, yield_acoustic_packets, (yield_packet_bytes_function, input_source, phonemask))):
 
         C = packet.intensity.shape[0]
@@ -157,6 +162,12 @@ def main():
             bins_rounded = np.round((10.0 * np.log10(np.mean(packet.intensity, axis=0)) - clow) / cstep)
             print('{ "time": %u.%06u, "asset": "%s", "df": %.3f, "dt": %.3f, "bins_per_octave": %u, "pgram": "%s" } ' % (packet.timestamp_microseconds // 1000000, packet.timestamp_microseconds % 1000000, asset, packet.df, packet.dt, packet.bins_per_octave, base64.b64encode(bins_rounded.astype(np.int8)).decode('utf-8')), flush=True)
 
-    print('maxrss is %.1f MB' % ((resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / (1024.0 if 'Linux' == platform.system() else 1048576.0)), file=sys.stderr)
+        monotonic_time_now = time.monotonic()
+        if monotonic_time_prior is not None:
+            throughput_den += monotonic_time_now - monotonic_time_prior
+            throughput_num += packet.dt
+        monotonic_time_prior = monotonic_time_now
+
+    print('%.2fx realtime, maxrss is %.1f MB' % (throughput_num / throughput_den if throughput_den > 0 else 1, (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss) / (1024.0 if 'Linux' == platform.system() else 1048576.0)), file=sys.stderr)
 
 main()
