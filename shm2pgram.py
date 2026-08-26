@@ -27,9 +27,6 @@ from shared_memory_ringbuffer_reader import shared_memory_ringbuffer_generator
 
 import numpy as np
 
-def round_up_to_next_multiple_of(a, q):
-    return a + q - a % q if a % q else a
-
 def yield_from_shm_and_strip_logging_header(source):
     for packet_with_logging_header in shared_memory_ringbuffer_generator(source):
         packet_bytes = packet_with_logging_header[8:]
