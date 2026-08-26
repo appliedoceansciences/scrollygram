@@ -99,10 +99,11 @@ def overlapped_fft_frame_generator(df_desired, f0_desired, fh_desired, yield_aco
     fs = acoustic_block.sample_rate
 
     T = 2 * Th
-    print('fft length %u samples' % T, file=sys.stderr)
 
     df = fs / (2 * Th)
     dt = Th / fs
+
+    print('fft length %u samples, spacing %g Hz' % (T, df), file=sys.stderr)
 
     iw_start = round(f0_desired / df)
     f0 = iw_start * df
