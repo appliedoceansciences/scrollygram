@@ -3,8 +3,6 @@
 import argparse
 import socket
 import sys
-import threading
-import queue
 import math
 import signal
 import base64
