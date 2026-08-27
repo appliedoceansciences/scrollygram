@@ -5,6 +5,7 @@
 
 import struct
 import sys
+import argparse
 
 def pcm2packets(src, input_dtype_string, C, sample_rate, t0):
     itemsize = 2 if input_dtype_string == 'int16' else 4
@@ -52,22 +53,26 @@ def pcm2packets(src, input_dtype_string, C, sample_rate, t0):
 
         seqnum = (seqnum + 1) % 65536
 
-if __name__ == '__main__':
-    def main():
-        input_dtype_string = 'int16'
-        sample_rate = 31250.0
-        C = 1
-        t0 = 1725898437.0
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('params', nargs='?', default=None, help='JSON file from which to read parameteres')
+    parser.add_argument('--C', default=1, type=int, help='Number of channels')
+    parser.add_argument('--fs', default=31250.0, type=float, help='Sample rate')
+    parser.add_argument('--dtype', default='int16', help='Data type of the samples')
+    parser.add_argument('--t0', default=1725898437.0, type=float, help='Initial timestamp')
 
-        # loop over pairs of arguments
-        for key, value in zip(sys.argv[1::2], sys.argv[2::2]):
-            if key == 'fs': sample_rate = float(value)
-            if key == 'C': C = int(value)
-            if key == 'dtype': input_dtype_string = value
-            if key == 't0': t0 = float(value)
+    a = parser.parse_args()
+    C, sample_rate, input_dtype_string, t0 = a.C, a.fs, a.dtype, a.t0
 
-        for logging_header_bytes, packet_bytes, padding in pcm2packets(sys.stdin.buffer, input_dtype_string, C, sample_rate, t0):
-            sys.stdout.buffer.write(logging_header_bytes + packet_bytes + padding)
-            sys.stdout.buffer.flush()
+    if a.params is not None:
+        import json
+        with open(a.params) as f: params = json.load(f)
+        if 'positions' in params: C = len(params['positions'])
+        if 'sample_rate' in params: sample_rate = float(params['sample_rate'])
+        if 'dtype' in params: input_dtype_string = params['dtype']
 
-    main()
+    for logging_header_bytes, packet_bytes, padding in pcm2packets(sys.stdin.buffer, input_dtype_string, C, sample_rate, t0):
+        sys.stdout.buffer.write(logging_header_bytes + packet_bytes + padding)
+        sys.stdout.buffer.flush()
+
+main()
