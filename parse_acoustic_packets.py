@@ -6,7 +6,7 @@
 
 import struct
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import namedtuple
 import numpy as np
 
@@ -75,7 +75,7 @@ def yield_packet_bytes_from_log_stream(source):
 def datestr_from_unix_microseconds(microseconds):
     integer_portion = microseconds // 1000000
     remainder = microseconds % 1000000
-    return '%s.%06uZ' % (datetime.utcfromtimestamp(integer_portion).strftime('%Y%m%dT%H%M%S'), remainder)
+    return '%s.%06uZ' % (datetime.fromtimestamp(integer_portion, timezone.utc).strftime('%Y%m%dT%H%M%S'), remainder)
 
 # this generator function can be imported and used by calling code to ingest from log files or udp
 def yield_acoustic_packets(yield_packet_bytes_function, source, phonemask):
